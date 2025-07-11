@@ -1,0 +1,10 @@
+*.pdb
+*.o
+*.a
+*.so
+*.lib
+*.out
+
+raylib.h
+raylib
+clock
