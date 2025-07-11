@@ -1,0 +1,15 @@
+FLAGS = -g
+INCLUDE_PATHS = -Iraylib/src -Iraylib/src/external
+LDFLAGS = -L./
+LDLIBS = -lraylib -lGLESv2 -lEGL -lgbm -ldrm
+SRCS = main.cpp framebuffercontainer.cpp
+OBJ = $(SRCS:.cpp=.o)
+PROG = clock
+
+all : $(PROG)
+
+$(PROG) : $(OBJ)
+	g++ -o $(PROG) $(OBJ) $(FLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS)
+	
+clean:
+	rm -f *.o $(PROG)
