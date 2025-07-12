@@ -1,4 +1,4 @@
-FLAGS = -g
+CXXFLAGS = -g -std=c++20
 INCLUDE_PATHS = -Iraylib/src -Iraylib/src/external
 LDFLAGS = -L./
 LDLIBS = -lraylib -lGLESv2 -lEGL -lgbm -ldrm
@@ -9,7 +9,7 @@ PROG = clock
 all : $(PROG)
 
 $(PROG) : $(OBJ)
-	g++ -o $(PROG) $(OBJ) $(FLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS)
+	g++ -o $(PROG) $(OBJ) $(CXXFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS)
 	
 clean:
 	rm -f *.o $(PROG)

@@ -42,12 +42,6 @@ FBDESC_ERR::CODE FrameBufferContainer::openFrameBuffer()
 	devDirTemp.append(std::to_string(this->bufNum));
 	const char* devDir = devDirTemp.c_str();
 	
-	//Build device directory string
-	//std::string devNum = std::to_string(this->bufNum); //Get device number as string
-	//const char* devDir = new char[8 + devNum.length()]; //Allocate a buffer of the exact size to fit the directory w/ null term
-	//strncpy(devDir, "/dev/fb", 8 + devNum.length()); //Copy the beginning of the directory to the buffer
-	//strncpy(devDir + 7, devNum.c_str(), devNum.length()); //Copy the device number string to the end of the buffer
-	
 	this->descriptor = open(devDir, O_RDWR);
 	
 	if (this->descriptor == -1)
