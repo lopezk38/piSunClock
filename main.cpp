@@ -18,6 +18,8 @@
 #include <chrono>
 
 #include "raylib.h"
+#include "ddcutil_c_api.h"
+#include "ddcutil_status_codes.h"
 
 #include "errorcodes.h"
 #include "framebuffercontainer.h"
@@ -48,7 +50,13 @@ struct timeStruct
 / Function prototypes
 /*****************************************************************************/
 
+//Time
 timeStruct getTime();
+
+//Brightness and DDC
+DDCA_Display_Handle ddcInit();
+DDCA_Status setDDCBrightness(DDCA_Display_Handle displayHandle, unsigned char brightness);
+void ddcDeinit(DDCA_Display_Handle displayHandle);
 
 
 /******************************************************************************
@@ -57,6 +65,9 @@ timeStruct getTime();
 
 int main(int argc, char* argv[])
 {
+	//Init DDC
+	DDCA_Display_Handle displayHandle = ddcInit();
+	
 	//Init framebuffer
 	FrameBufferContainer fBuf(FRAMEBUFFER_DEV);
 	
@@ -67,13 +78,34 @@ int main(int argc, char* argv[])
 	#ifndef DEBUG
 	SetTargetFPS(1);
 	std::cout << "Sun Clock is now running. Press ESC to quit." << std::endl;
+	
+	//Setup time
+	timeStruct curTime = getTime();
+	
+	//Setup initial brightness
+	setDDCBrightness(displayHandle, sunBrightness::interp(curTime.hour, curTime.min));
+	bool shouldUpdateBrightness = false; //For debouncing
+	
+	//Main loop
 	while (!WindowShouldClose())
 	{
 		BeginDrawing();
 		
-		timeStruct curTime = getTime();
+		//Set color
+		curTime = getTime();
 		Color color = sunColor::interp(curTime.hour, curTime.min);
 		ClearBackground(color);
+		
+		//Set brightness every 30 minutes
+		if (!(curTime.min % 30))
+		{
+			if (shouldUpdateBrightness) //Debouncing check
+			{
+				setDDCBrightness(displayHandle, sunBrightness::interp(curTime.hour, curTime.min));
+				shouldUpdateBrightness = false;
+			}
+		}
+		else shouldUpdateBrightness = true;
 		
 		EndDrawing();
 	}
@@ -90,9 +122,16 @@ int main(int argc, char* argv[])
 			
 			DrawText("DEBUG MODE", 20, 20, 40, YELLOW);
 			
+			//Set color
 			timeStruct curTime = getTime();
 			Color color = sunColor::interp(i, j);
 			ClearBackground(color);
+			
+			//Set brightness
+			if (!(i % 4) && !j) //Only do it once every four seconds (@60fps) to prevent excessive stress on the monitor
+			{
+				setDDCBrightness(displayHandle, sunBrightness::interp(i, j));
+			}
 		
 			EndDrawing();
 		}
@@ -136,6 +175,63 @@ timeStruct getTime()
 	#endif
 	
 	return curTime;
+}
+
+DDCA_Display_Handle ddcInit()
+{
+	DDCA_Display_Identifier displayID;
+	DDCA_Display_Ref displayRef;
+	DDCA_Display_Handle displayHandle = nullptr;
+	
+	//Identify and enumerate display
+	ddca_create_dispno_display_identifier(FRAMEBUFFER_DEV + 1, &displayID); //DDC starts at 1, not 0 like device number. Add 1 to compensate
+	DDCA_Status result = ddca_get_display_ref(displayID, &displayRef);
+	
+	if (result) 
+	{
+		//Non 0 result is an error
+		std::cerr << "ERROR: Unable to find DDC display. DDCA Status: " << ddca_rc_name(result) << ": " << ddca_rc_desc(result) << std::endl;
+		throw result;
+	}
+	
+	ddca_free_display_identifier(displayID); //Cleanup
+	
+	//Connect to display
+	result = ddca_open_display2(displayRef, false, &displayHandle);
+	
+	if (result) 
+	{
+		//Non 0 result is an error
+		std::cerr << "ERROR: Unable to connect to DDC display. DDCA Status: " << ddca_rc_name(result) << ": " << ddca_rc_desc(result) << std::endl;
+		throw result;
+	}
+	
+	return displayHandle;
+}
+
+DDCA_Status setDDCBrightness(DDCA_Display_Handle displayHandle, unsigned char brightness)
+{
+	//Check if we are connected to a display
+	if (!displayHandle) return DDCRC_INVALID_DISPLAY;
+	
+	//Enforce bounds on brightness
+	if (brightness > 100) brightness = 100;
+	
+	//Use DDC to command brightness level. 0x10 code is brighness.	
+	DDCA_Status result = ddca_set_non_table_vcp_value(displayHandle, 0x10, 0x0, brightness);
+	
+	#ifdef DEBUG
+	std::cout << "Set brightness to " << brightness << " with status code " << result << ": " << ddca_rc_name(result) << ": " << ddca_rc_desc(result) << std::endl;
+	#endif
+	
+	return result;
+}
+
+void ddcDeinit(DDCA_Display_Handle displayHandle)
+{
+	ddca_close_display(displayHandle);
+	
+	return;
 }
 
 #endif

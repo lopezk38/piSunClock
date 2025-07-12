@@ -63,11 +63,66 @@ public:
 		blendedColor.b -= (thisHrColor.b - nextHrColor.b) * blendRatio;
 		
 		#ifdef DEBUG
-		std::cout << "Time is " << hour << ":" << minute << ". Calculated color is {" 
+		std::cout << "Time is " << hour << ':' << minute << ". Calculated color is {" 
 				  << static_cast<int>(blendedColor.r) << ", " << static_cast<int>(blendedColor.g) << ", " << static_cast<int>(blendedColor.b) << "}" << std::endl;
 		#endif
 		
 		return blendedColor;
+	}
+};
+
+class sunBrightness
+{
+public:
+
+	static constexpr unsigned char sunBrightnessLUT[24] =
+	{
+		0,			//0 hrs
+		0,			//1 hr
+		0,			//2 hrs
+		0,			//3 hrs
+		0,			//4
+		15,			//5
+		25,			//6
+		75,			//7
+		100,		//8
+		100,		//9
+		100,		//10
+		100,		//11
+		100,		//12
+		100,		//13
+		100,		//14
+		100,		//15
+		100,		//16
+		75,			//17
+		50,			//18
+		25,			//19
+		15,			//20
+		0,			//21
+		0,			//22
+		0			//23 hrs
+	};
+	
+	static unsigned char interp(int hour, int minute)
+	{
+		//Bound inputs
+		if (hour < 0 || hour > 23) { hour = 0; }
+		if (minute < 0 || minute > 60) { minute = 0; }
+		
+		//Get base color vals to blend together
+		unsigned char blendedBrightness = sunBrightnessLUT[hour];
+		unsigned char nextHrBrightness = sunBrightnessLUT[(hour + 1) % 24];
+		
+		//Blend brightness together
+		float blendRatio = minute / 60.0;
+		blendedBrightness -= (blendedBrightness - nextHrBrightness) * blendRatio;
+		
+		#ifdef DEBUG
+		std::cout << "Time is " << hour << ':' << minute << ". Calculated brightness is " 
+				  << static_cast<unsigned short>(blendedBrightness) << '%' << std::endl;
+		#endif
+		
+		return blendedBrightness;
 	}
 };
 	
