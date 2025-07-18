@@ -3,8 +3,8 @@
 /
 /*****************************************************************************/
 
-#ifndef SUNCLOCK_APP_LUT
-#define SUNCLOCK_APP_LUT
+#ifndef SUNCLOCK_APP_SUN_LUT
+#define SUNCLOCK_APP_SUN_LUT
 
 #ifdef DEBUG
 #include <iostream>
@@ -13,7 +13,7 @@
 #include "raylib.h"
 
 
-class sunColor
+class SunColor
 {
 public:
 
@@ -71,7 +71,7 @@ public:
 	}
 };
 
-class sunBrightness
+class SunBrightness
 {
 public:
 
@@ -98,9 +98,9 @@ public:
 		50,			//18
 		25,			//19
 		15,			//20
-		0,			//21
-		0,			//22
-		0			//23 hrs
+		1,			//21
+		1,			//22
+		1			//23 hrs
 	};
 	
 	static unsigned char interp(int hour, int minute)
